@@ -1,4 +1,4 @@
-﻿# Load the HTML Agility Pack assembly
+# Load the HTML Agility Pack assembly
 Add-Type -Path "HtmlAgilityPack.dll"
 
 # Install the required SQL Server module
@@ -21,7 +21,7 @@ $databaseName = "sys_infonew"
 # Connection string for the SQL Server
 $connectionString = "Data Source=(localdb)\MSSQLLocalDB;Initial Catalog=$databaseName;Integrated Security=True;Connect Timeout=30;Encrypt=False;Application Name=HTML2DATABASE"
 
-#$connectionString = "Server=tcp:getintoit1dbserver.database.windows.net,1433;Initial Catalog=SectionInformation_db;Persist Security Info=False;User ID=AshwaniGusain;Password=*****;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
+#$connectionString = "Server=tcp:getintoit1dbserver.database.windows.net,1433;Initial Catalog=SectionInformation_db;Persist Security Info=False;User ID=AshwaniGusain;Password=Getintoit@4321;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
 
 # Switch the context to the existing database
 #$useDatabaseSql = "USE [$databaseName]"
@@ -121,7 +121,7 @@ while ($systemsInformationReader.Read()) {
         $wordCount = $columnNames.Split(' ').Count
         Write-Host "$wordCount"
 
-        if ($wordCount -ge 1) {
+        if ($wordCount -gt 1) {
                     
                     $coln = $columnNames[$i]
                 }
@@ -159,12 +159,15 @@ while ($systemsInformationReader.Read()) {
 
             foreach ($row in $tableRows[1..($tableRows.Count - 1)]) {
                 $columnValues = $row.SelectNodes("td") | ForEach-Object { $_.InnerText }
+                #$columnValues = $row.SelectNodes("td") | Where-Object { $_.InnerText -eq $coln } | ForEach-Object { $_.InnerText }
 
                 # Generate the column and value SQL statements
                 $columnsSql = "[" + ($columnNames -join "], [") + "]"
                 $valuesSql = "'" + ($columnValues -join "', '") + "'"
 
-                 if ($columnNames -notmatch "^\w+$") {
+                $wordCount1 = $columnValues.Split(' ').Count
+
+                 if ($wordCount -gt 1) {
                     
                     $col = $columnValues[$i]
                 }
@@ -172,7 +175,7 @@ while ($systemsInformationReader.Read()) {
                 $col = $columnValues
                 }
 
-                #$col = $columnValues[$i]
+                #$col = $columnValues
 
                 # Generate the insert SQL statement
                 $insertDataSql = "INSERT INTO sectioninfo_rowsdata (system_id, sectioninfo_id, Column_id, rowdata) 
@@ -204,21 +207,3 @@ while ($systemsInformationReader.Read()) {
 $systemsInformationReader.Close()
 $systemsInformationReader.Dispose()
 $systemsInformationCommand.Dispose()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
