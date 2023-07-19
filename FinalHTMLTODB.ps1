@@ -7,11 +7,23 @@ Add-Type -Path "HtmlAgilityPack.dll"
 # Import the required ADO.NET assembly
 Add-Type -Path "System.Data.SqlClient.dll"
 
+# Access the COMPUTERNAME environment variable
+$computerName = $env:COMPUTERNAME
+
+# Specify the path to the executable
+$exePath = ".\LookInMyPC.exe"
+
+# Start the executable
+$process = Start-Process -FilePath $exePath -PassThru
+
+# Wait for the application to load
+Start-Sleep -Seconds 5
+    Start-Sleep -Seconds 10
+    # Wait for the application to exit
+    $process.WaitForExit()
 
 # Specify the path to the HTML file
-$htmlFilePath = "D:\HyperV\LookInMyPC\Reports\DESKTOP-JM32ILE\Page1.htm"
-
-
+$htmlFilePath = ".\Reports\$computerName\Page1.htm"
 
 $html = Get-Content -Path $htmlFilePath -Raw
 
