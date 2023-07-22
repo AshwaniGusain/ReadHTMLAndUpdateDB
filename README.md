@@ -1,4 +1,3 @@
 # ReadHTMLAndUpdateDB
 
-To Use this .ps you need to have D:\HyperV\LookInMyPC\Reports\YourPCName\Page1.htm file in this path
-Make sure this file in your local and run .ps in Powershell ISE
+Code is update now, User need to run RunSystemInfoScript.bat directly from the extracted path and it will do rest.
