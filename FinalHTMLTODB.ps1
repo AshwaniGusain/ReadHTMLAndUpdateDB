@@ -18,12 +18,19 @@ $process = Start-Process -FilePath $exePath -PassThru
 
 # Wait for the application to load
 Start-Sleep -Seconds 5
+
+    # Optional: Wait for the report generation to complete (adjust the sleep time as needed)
     Start-Sleep -Seconds 10
+
     # Wait for the application to exit
     $process.WaitForExit()
 
+
+
 # Specify the path to the HTML file
 $htmlFilePath = ".\Reports\$computerName\Page1.htm"
+
+
 
 $html = Get-Content -Path $htmlFilePath -Raw
 
@@ -40,9 +47,6 @@ $connectionString = "Data Source=(localdb)\MSSQLLocalDB;Initial Catalog=$databas
 #$useDatabaseSql = "USE [$databaseName]"
 $useDatabaseConnection = New-Object System.Data.SqlClient.SqlConnection($connectionString)
 $useDatabaseConnection.Open()
-#$useDatabaseCommand = $useDatabaseConnection.CreateCommand()
-#$useDatabaseCommand.CommandText = $useDatabaseSql
-#$useDatabaseCommand.ExecuteNonQuery()
 
 
 $tableHeadingHTML = "Network Adapter Information - What's This?"
@@ -78,18 +82,70 @@ foreach ($table in $tables) {
                          
         }
 
-        # Update sys_IP and sys_name column in systems table
-        $InsertSysIpSql = "INSERT INTO systems (sys_IP, sys_name) VALUES ('$desiredIPValue', '$desiredUserDetails');"
+        
+         $currentTime = Get-Date
+         $formattedTime = $currentTime.ToString("yyyy-MM-dd HH:mm:ss")
+         $dateTimeObject = [DateTime]::ParseExact($formattedTime, "yyyy-MM-dd HH:mm:ss", $null)
+
+         $sysitreration = 1;
+         # Fetch id and sys_heading columns from systems table
+        $systemsQuery = "SELECT TOP 1 * FROM systems WHERE sys_IP like '%$desiredIPValue%'ORDER BY IterationNumber DESC"
+        $systemsCommand = $useDatabaseConnection.CreateCommand()
+        $systemsCommand.CommandText = $systemsQuery
+        $systemsReader = $systemsCommand.ExecuteReader()
+
+            if ($systemsReader.Read()) {
+            $sysitreration = $systemsReader["IterationNumber"]
+
+            $systemsReader.Close()
+            $systemsCommand.Dispose()
+
+          $sysitreration++
+         # Update sys_IP and sys_name column in systems table
+        $InsertSysIpSql = "INSERT INTO systems (sys_IP, sys_name, IterationNumber, sys_time) VALUES ('$desiredIPValue', '$desiredUserDetails','$sysitreration', '$dateTimeObject');"
         #write-Host "$InsertSysIpSql"
         $InsertSysIpCommand = $useDatabaseConnection.CreateCommand()
         $InsertSysIpCommand.CommandText = $InsertSysIpSql
         $InsertSysIpCommand.ExecuteNonQuery()
-                    
+
         Write-Host "Inserted sys_IP in systems table with IP Address value."
+
+            }
+
+            else
+            {
+            $systemsReader.Close()
+            $systemsCommand.Dispose()
+
+        # Update sys_IP and sys_name column in systems table
+        $InsertSysIpSql = "INSERT INTO systems (sys_IP, sys_name, IterationNumber, sys_time) VALUES ('$desiredIPValue', '$desiredUserDetails', '$sysitreration', '$dateTimeObject');"
+        #write-Host "$InsertSysIpSql"
+        $InsertSysIpCommand = $useDatabaseConnection.CreateCommand()
+        $InsertSysIpCommand.CommandText = $InsertSysIpSql
+        $InsertSysIpCommand.ExecuteNonQuery()
+            
+            Write-Host "Inserted sys_IP first time in systems table with IP Address value."
+
+           }
+
+            $systemsReader.Close()
+            $systemsCommand.Dispose()
+
+
+        
+
+        # Update sys_IP and sys_name column in systems table
+        #$InsertSysIpSql = "INSERT INTO systems (sys_IP, sys_name) VALUES ('$desiredIPValue', '$desiredUserDetails');"
+        #write-Host "$InsertSysIpSql"
+        #$InsertSysIpCommand = $useDatabaseConnection.CreateCommand()
+        ##$InsertSysIpCommand.CommandText = $InsertSysIpSql
+        #$InsertSysIpCommand.ExecuteNonQuery()
+                    
+        
 
 
          # Fetch id and sys_heading columns from systems table
-        $systemsQuery = "SELECT Id, sys_IP, sys_name FROM systems where sys_IP = '$desiredIPValue'"
+        $systemsQuery = "SELECT Id, sys_IP, sys_name FROM systems where sys_IP = '$desiredIPValue' and IterationNumber = '$sysitreration'"
         $systemsCommand = $useDatabaseConnection.CreateCommand()
         $systemsCommand.CommandText = $systemsQuery
         $systemsReader = $systemsCommand.ExecuteReader()
@@ -132,7 +188,7 @@ while ($systemsInformationReader.Read()) {
         # Update sys_IP and sys_name column in systems table
 
         $wordCount = $columnNames.Split(' ').Count
-        Write-Host "$wordCount"
+        #Write-Host "$wordCount"
 
         if ($wordCount -gt 1) {
                     
@@ -142,7 +198,7 @@ while ($systemsInformationReader.Read()) {
         $coln = $columnNames
         }
        $InsertColumns = @"
-        INSERT INTO sectioninfo_columns (sys_id,section_id,column_name ) VALUES ('$sysid', '$id', '$coln');
+        INSERT INTO sectioninfo_columns (sys_id,section_id,column_name,IterationNumber ) VALUES ('$sysid', '$id', '$coln', '$sysitreration');
 
         SELECT SCOPE_IDENTITY() AS LastInsertedID;
 "@
@@ -191,8 +247,8 @@ while ($systemsInformationReader.Read()) {
                 #$col = $columnValues
 
                 # Generate the insert SQL statement
-                $insertDataSql = "INSERT INTO sectioninfo_rowsdata (system_id, sectioninfo_id, Column_id, rowdata) 
-                                  VALUES ('$sysid', '$id', '$lastInsertedColumnID', '$col')"
+                $insertDataSql = "INSERT INTO sectioninfo_rowsdata (system_id, sectioninfo_id, Column_id, rowdata, IterationNumber) 
+                                  VALUES ('$sysid', '$id', '$lastInsertedColumnID', '$col', '$sysitreration')"
                 
                 # Create a new connection for insert command
                 $insertConnection = New-Object System.Data.SqlClient.SqlConnection($connectionString)
